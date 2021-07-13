@@ -213,6 +213,7 @@ function fromCodioProject(libraryId, path) {
                 yield updateOrAdd(libraryId, _, path);
             }
             catch (_) {
+                console.error(_.message);
             }
         }
     });

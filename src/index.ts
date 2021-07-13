@@ -23,7 +23,6 @@ const main = async () => {
     } else {
       codio.v1.setAuthToken(token)
     }
-
     
     await codio.v1.assessment.fromCodioProject(libraryId, dir)
     console.log('Completed!')
