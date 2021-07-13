@@ -1140,7 +1140,6 @@ function createTar(basePath, paths, excludePaths) {
         fs_1.default.createReadStream(file)
             .pipe(simple_zstd_1.ZSTDCompress())
             .pipe(fs_1.default.createWriteStream(path_1.default.join(dir, 'archive.tar.zst')));
-        yield fs_1.default.promises.rm(file);
         return zst;
     });
 }
