@@ -17,9 +17,9 @@ inputs:
   dir:
     description: 'directory with the assignment files structure can be used instead of zip'
     required: false
-  
+  domain:
     description: 'API Domain'
     default: 'codio.com'
 runs:
-  using: 'node14'
+  using: 'node12'
   main: 'dist/index.js'
