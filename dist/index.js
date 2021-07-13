@@ -50131,7 +50131,7 @@ const main = () => __awaiter(void 0, void 0, void 0, function* () {
         const token = core.getInput('token', { required: false });
         const clientId = core.getInput('client-id', { required: false });
         const secretId = core.getInput('secret-id', { required: false });
-        const libraryId = core.getInput('secret-id', { required: true });
+        const libraryId = core.getInput('library-id', { required: true });
         const dir = core.getInput('dir', { required: true });
         const domain = core.getInput('domain', { required: false });
         if (!token && !clientId && !secretId) {
