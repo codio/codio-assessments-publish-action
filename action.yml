@@ -1,0 +1,25 @@
+# action.yml
+name: 'Codio assessment publish'
+description: 'Publishes a new version of assessment'
+inputs:
+  token:
+    description: 'API access token'
+    required: false
+  client-id:
+    description: 'Client ID'
+    required: false
+  secret-id:
+    description: 'Secret ID'
+    required: false
+  library-id:
+    description: 'Library Id'
+    required: false
+  dir:
+    description: 'directory with the assignment files structure can be used instead of zip'
+    required: false
+  
+    description: 'API Domain'
+    default: 'codio.com'
+runs:
+  using: 'node14'
+  main: 'dist/index.js'
