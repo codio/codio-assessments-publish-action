@@ -9,16 +9,13 @@ const main = async () => {
     const secretId = core.getInput('secret-id', { required: false })
     const libraryId = core.getInput('secret-id', { required: true })
 
-    const dir = core.getInput('dir', { required: false })
+    const dir = core.getInput('dir', { required: true })
     const domain = core.getInput('domain', { required: false })
     
     if (!token && !clientId && !secretId) {
       throw new Error('no Auth Data')
     }
 
-    if (!dir) {
-      throw new Error('no source is defined')
-    }
     codio.v1.setDomain(domain)
 
     if (!token) {

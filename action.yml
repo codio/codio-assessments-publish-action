@@ -13,10 +13,10 @@ inputs:
     required: false
   library-id:
     description: 'Library Id'
-    required: false
+    required: true
   dir:
     description: 'directory with the assignment files structure can be used instead of zip'
-    required: false
+    required: true
   domain:
     description: 'API Domain'
     default: 'codio.com'
