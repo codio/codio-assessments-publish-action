@@ -1,7 +1,6 @@
 import * as core from '@actions/core'
 import codio from 'codio-api-js'
 
-
 const main = async () => {
   try {
     const token = core.getInput('token', { required: false })

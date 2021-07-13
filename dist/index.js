@@ -201,6 +201,7 @@ function loadProjectAssessments(dir) {
                 console.log(`Skipping assessment ${_.message}`);
             }
         }
+        console.log(`Assessments found: ${res.length}`);
         return res;
     });
 }
