@@ -457,11 +457,7 @@ class Assessment {
                 };
             }
         });
-        const res = {};
-        for (const _ in hashes) {
-            res[_['filePath']] = _['hex'];
-        }
-        return res;
+        return hashes;
     }
     getHash() {
         const object = this._export(true);
