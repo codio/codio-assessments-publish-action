@@ -42,6 +42,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.publishAssessment = void 0;
 const fs_1 = __importDefault(__nccwpck_require__(5747));
 const bent_1 = __importDefault(__nccwpck_require__(3908));
 const path_1 = __importDefault(__nccwpck_require__(5622));
@@ -75,7 +76,7 @@ function listLibraries() {
         catch (error) {
             if (error.json) {
                 const message = JSON.stringify(yield error.json());
-                error = new Error(message);
+                throw new Error(message);
             }
             throw error;
         }
@@ -128,11 +129,11 @@ function publishAssessment(libraryId, assessment, isNew, base) {
             const archivePath = yield assessment.getBundle(base);
             if (archivePath) {
                 postData.append('bundle', fs_1.default.createReadStream(archivePath), {
-                    knownLength: fs_1.default.statSync(archivePath).size
+                    knownLength: (yield fs_1.default.promises.stat(archivePath)).size
                 });
             }
             const headers = Object.assign(postData.getHeaders(), authHeaders);
-            headers['Content-Length'] = postData.getLengthSync();
+            headers['Content-Length'] = yield new Promise(resolve => postData.getLength((_, length) => resolve(length)));
             const assessmentId = isNew ? '' : `/${assessment.assessmentId}`;
             yield updateJSON(assessment, base, isNew);
             yield api(`/api/v1/assessment_library/${libraryId}/assessment${assessmentId}`, postData, headers);
@@ -140,12 +141,13 @@ function publishAssessment(libraryId, assessment, isNew, base) {
         catch (error) {
             if (error.json) {
                 const message = JSON.stringify(yield error.json());
-                error = new Error(message);
+                throw new Error(message);
             }
             throw error;
         }
     });
 }
+exports.publishAssessment = publishAssessment;
 function updateOrAdd(libraryId, assessment, base) {
     return __awaiter(this, void 0, void 0, function* () {
         const search = new Map();
@@ -245,7 +247,7 @@ function find(libraryId, tags = new Map()) {
         catch (error) {
             if (error.json) {
                 const message = JSON.stringify(yield error.json());
-                error = new Error(message);
+                throw new Error(message);
             }
             throw error;
         }
@@ -255,7 +257,8 @@ const assessment = {
     listLibraries,
     find,
     updateOrAdd,
-    fromCodioProject
+    fromCodioProject,
+    publishAssessment,
 };
 exports.default = assessment;
 
@@ -415,7 +418,7 @@ class Assessment {
             if (this.metadata.files.length === 0) {
                 return;
             }
-            yield tools_1.createTar(base, this.metadata.files);
+            return tools_1.createTar(base, this.metadata.files);
         });
     }
     getId() {
@@ -822,7 +825,7 @@ function publishArchive(courseId, assignmentId, archivePath, changelog) {
         catch (error) {
             if (error.json) {
                 const message = JSON.stringify(yield error.json());
-                error = new Error(message);
+                throw new Error(message);
             }
             throw error;
         }
@@ -854,7 +857,7 @@ function loadYaml(yamlDir) {
     return __awaiter(this, void 0, void 0, function* () {
         let res = [];
         const files = yield glob_promise_1.default('*.+(yml|yaml)', { cwd: yamlDir, nodir: true });
-        for (var file of files) {
+        for (const file of files) {
             const ymlText = yield fs_1.default.promises.readFile(path_1.default.join(yamlDir, file), { encoding: 'utf-8' });
             let ymls = yaml_1.default.parse(ymlText);
             if (!lodash_1.default.isArray(ymls)) {
@@ -3327,7 +3330,7 @@ function objectToString(o) {
 "use strict";
 
 var path = __nccwpck_require__(5622);
-var globby = __nccwpck_require__(1458);
+var globby = __nccwpck_require__(1412);
 var isPathCwd = __nccwpck_require__(4274);
 var isPathInCwd = __nccwpck_require__(7538);
 var objectAssign = __nccwpck_require__(8690);
@@ -3398,6 +3401,79 @@ module.exports.sync = function (patterns, opts) {
 		return file;
 	});
 };
+
+
+/***/ }),
+
+/***/ 1412:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+var Promise = __nccwpck_require__(5496);
+var arrayUnion = __nccwpck_require__(2465);
+var objectAssign = __nccwpck_require__(8690);
+var glob = __nccwpck_require__(1761);
+var arrify = __nccwpck_require__(5267);
+var pify = __nccwpck_require__(8926);
+
+var globP = pify(glob, Promise).bind(glob);
+
+function isNegative(pattern) {
+	return pattern[0] === '!';
+}
+
+function generateGlobTasks(patterns, opts) {
+	var globTasks = [];
+
+	patterns = arrify(patterns);
+	opts = objectAssign({
+		cache: Object.create(null),
+		statCache: Object.create(null),
+		realpathCache: Object.create(null),
+		symlinks: Object.create(null),
+		ignore: []
+	}, opts);
+
+	patterns.forEach(function (pattern, i) {
+		if (isNegative(pattern)) {
+			return;
+		}
+
+		var ignore = patterns.slice(i).filter(isNegative).map(function (pattern) {
+			return pattern.slice(1);
+		});
+
+		globTasks.push({
+			pattern: pattern,
+			opts: objectAssign({}, opts, {
+				ignore: opts.ignore.concat(ignore)
+			})
+		});
+	});
+
+	return globTasks;
+}
+
+module.exports = function (patterns, opts) {
+	var globTasks = generateGlobTasks(patterns, opts);
+
+	return Promise.all(globTasks.map(function (task) {
+		return globP(task.pattern, task.opts);
+	})).then(function (paths) {
+		return arrayUnion.apply(null, paths);
+	});
+};
+
+module.exports.sync = function (patterns, opts) {
+	var globTasks = generateGlobTasks(patterns, opts);
+
+	return globTasks.reduce(function (matches, task) {
+		return arrayUnion(matches, glob.sync(task.pattern, task.opts));
+	}, []);
+};
+
+module.exports.generateGlobTasks = generateGlobTasks;
 
 
 /***/ }),
@@ -7263,79 +7339,6 @@ GlobSync.prototype._mark = function (p) {
 GlobSync.prototype._makeAbs = function (f) {
   return common.makeAbs(this, f)
 }
-
-
-/***/ }),
-
-/***/ 1458:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-"use strict";
-
-var Promise = __nccwpck_require__(5496);
-var arrayUnion = __nccwpck_require__(2465);
-var objectAssign = __nccwpck_require__(8690);
-var glob = __nccwpck_require__(1761);
-var arrify = __nccwpck_require__(5267);
-var pify = __nccwpck_require__(8926);
-
-var globP = pify(glob, Promise).bind(glob);
-
-function isNegative(pattern) {
-	return pattern[0] === '!';
-}
-
-function generateGlobTasks(patterns, opts) {
-	var globTasks = [];
-
-	patterns = arrify(patterns);
-	opts = objectAssign({
-		cache: Object.create(null),
-		statCache: Object.create(null),
-		realpathCache: Object.create(null),
-		symlinks: Object.create(null),
-		ignore: []
-	}, opts);
-
-	patterns.forEach(function (pattern, i) {
-		if (isNegative(pattern)) {
-			return;
-		}
-
-		var ignore = patterns.slice(i).filter(isNegative).map(function (pattern) {
-			return pattern.slice(1);
-		});
-
-		globTasks.push({
-			pattern: pattern,
-			opts: objectAssign({}, opts, {
-				ignore: opts.ignore.concat(ignore)
-			})
-		});
-	});
-
-	return globTasks;
-}
-
-module.exports = function (patterns, opts) {
-	var globTasks = generateGlobTasks(patterns, opts);
-
-	return Promise.all(globTasks.map(function (task) {
-		return globP(task.pattern, task.opts);
-	})).then(function (paths) {
-		return arrayUnion.apply(null, paths);
-	});
-};
-
-module.exports.sync = function (patterns, opts) {
-	var globTasks = generateGlobTasks(patterns, opts);
-
-	return globTasks.reduce(function (matches, task) {
-		return arrayUnion(matches, glob.sync(task.pattern, task.opts));
-	}, []);
-};
-
-module.exports.generateGlobTasks = generateGlobTasks;
 
 
 /***/ }),
