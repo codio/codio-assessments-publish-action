@@ -455,11 +455,11 @@ class Assessment {
         return res;
     }
     getHash() {
-        const object = this.export(true);
-        Object.assign('loadedFiles', this.loadFiles(this.basePath));
+        const object = this._export(true);
+        object['filesHash'] = this.loadFiles(this.basePath);
         return object_hash_1.default(object);
     }
-    export(checksum = false) {
+    _export(checksum = false) {
         const tags = {};
         this.metadata.tags.forEach((value, name) => {
             if (checksum && (name == exports.API_HASH_TAG || name == exports.API_ID_TAG)) {
@@ -471,7 +471,7 @@ class Assessment {
         if (!checksum) {
             tags[exports.API_HASH_TAG] = this.getHash();
         }
-        const object = {
+        return {
             details: this.details,
             body: this.body,
             metadata: {
@@ -484,7 +484,9 @@ class Assessment {
                 tags,
             }
         };
-        return JSON.stringify(object);
+    }
+    export(checksum = false) {
+        return JSON.stringify(this._export(checksum));
     }
 }
 exports.Assessment = Assessment;
