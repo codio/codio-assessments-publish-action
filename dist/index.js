@@ -50,6 +50,7 @@ const config_1 = __importDefault(__nccwpck_require__(5162));
 const assessmentsTypes_1 = __nccwpck_require__(3860);
 const form_data_1 = __importDefault(__nccwpck_require__(8959));
 const tools_1 = __nccwpck_require__(6660);
+const lodash_1 = __importDefault(__nccwpck_require__(669));
 const getJson = bent_1.default('json');
 function listLibraries() {
     return __awaiter(this, void 0, void 0, function* () {
@@ -127,10 +128,16 @@ function publishAssessment(libraryId, assessment, isNew, base) {
             const postData = new form_data_1.default();
             postData.append('assessment', assessment.export());
             const archivePath = yield assessment.getBundle(base);
-            if (archivePath) {
-                postData.append('bundle', fs_1.default.createReadStream(archivePath), {
-                    knownLength: (yield fs_1.default.promises.stat(archivePath)).size
-                });
+            if (!lodash_1.default.isUndefined(archivePath)) {
+                const { size } = yield fs_1.default.promises.stat(archivePath);
+                if (size === 0) {
+                    console.log(`empty bundle`);
+                }
+                else {
+                    postData.append('bundle', fs_1.default.createReadStream(archivePath), {
+                        knownLength: size
+                    });
+                }
             }
             const headers = Object.assign(postData.getHeaders(), authHeaders);
             headers['Content-Length'] = yield new Promise(resolve => postData.getLength((_, length) => resolve(length)));
@@ -141,8 +148,10 @@ function publishAssessment(libraryId, assessment, isNew, base) {
         catch (error) {
             if (error.json) {
                 const message = JSON.stringify(yield error.json());
+                console.log(message);
                 throw new Error(message);
             }
+            console.log(error);
             throw error;
         }
     });
@@ -1142,9 +1151,13 @@ function createTar(basePath, paths, excludePaths) {
             }
         }, paths);
         const zst = path_1.default.join(dir, 'archive.tar.zst');
-        fs_1.default.createReadStream(file)
-            .pipe(simple_zstd_1.ZSTDCompress())
-            .pipe(fs_1.default.createWriteStream(path_1.default.join(dir, 'archive.tar.zst')));
+        yield new Promise((resolve, reject) => {
+            fs_1.default.createReadStream(file)
+                .pipe(simple_zstd_1.ZSTDCompress())
+                .pipe(fs_1.default.createWriteStream(path_1.default.join(dir, 'archive.tar.zst')))
+                .on('finish', resolve)
+                .on('error', reject);
+        });
         return zst;
     });
 }
