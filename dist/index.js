@@ -432,7 +432,7 @@ class Assessment {
             try {
                 const fullPath = path_1.default.join(basePath, filePath);
                 const fileBuffer = fs_1.default.readFileSync(fullPath);
-                const hashSum = crypto_1.default.createHash('sha256');
+                const hashSum = crypto_1.default.createHash('md5');
                 hashSum.update(fileBuffer);
                 const hex = hashSum.digest('hex');
                 return {
