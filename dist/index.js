@@ -42,7 +42,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.publishAssessment = void 0;
+exports.updateOrAdd = exports.publishAssessment = void 0;
 const fs_1 = __importDefault(__nccwpck_require__(5747));
 const bent_1 = __importDefault(__nccwpck_require__(3908));
 const path_1 = __importDefault(__nccwpck_require__(5622));
@@ -115,6 +115,13 @@ function updateJSON(assessment, base, isNew) {
 }
 function publishAssessment(libraryId, assessment, isNew, base) {
     return __awaiter(this, void 0, void 0, function* () {
+        libraryId = yield getLibraryId(libraryId);
+        return _publishAssessment(libraryId, assessment, isNew, base);
+    });
+}
+exports.publishAssessment = publishAssessment;
+function _publishAssessment(libraryId, assessment, isNew, base) {
+    return __awaiter(this, void 0, void 0, function* () {
         if (!config_1.default) {
             throw new Error('No Config');
         }
@@ -156,8 +163,25 @@ function publishAssessment(libraryId, assessment, isNew, base) {
         }
     });
 }
-exports.publishAssessment = publishAssessment;
+//return id if name passed
+function getLibraryId(name) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const libraries = yield listLibraries();
+        const item = lodash_1.default.find(libraries, { name });
+        if (lodash_1.default.isUndefined(item)) {
+            return name;
+        }
+        return item.id;
+    });
+}
 function updateOrAdd(libraryId, assessment, base) {
+    return __awaiter(this, void 0, void 0, function* () {
+        libraryId = yield getLibraryId(libraryId);
+        return _updateOrAdd(libraryId, assessment, base);
+    });
+}
+exports.updateOrAdd = updateOrAdd;
+function _updateOrAdd(libraryId, assessment, base) {
     return __awaiter(this, void 0, void 0, function* () {
         const search = new Map();
         search.set(assessmentsTypes_1.API_ID_TAG, assessment.getId());
@@ -165,7 +189,7 @@ function updateOrAdd(libraryId, assessment, base) {
         const isNew = (assessments.length == 0);
         if (isNew) {
             console.log(`new ${assessment.details.name}`);
-            yield publishAssessment(libraryId, assessment, true, base);
+            yield _publishAssessment(libraryId, assessment, true, base);
         }
         else {
             console.log(`${assessment.details.name} exists`);
@@ -176,7 +200,7 @@ function updateOrAdd(libraryId, assessment, base) {
                 console.log(`${assessment.details.name} updating 
       new "${checksumProject}" old "${checksumLibrary}"`);
                 assessment.assessmentId = libraryAssessment.assessmentId;
-                yield publishAssessment(libraryId, assessment, false, base);
+                yield _publishAssessment(libraryId, assessment, false, base);
             }
             else {
                 console.log(`${assessment.details.name} unchanged`);
@@ -218,10 +242,11 @@ function loadProjectAssessments(dir) {
 }
 function fromCodioProject(libraryId, path) {
     return __awaiter(this, void 0, void 0, function* () {
+        libraryId = yield getLibraryId(libraryId);
         const assessments = yield loadProjectAssessments(path);
         for (const _ of assessments) {
             try {
-                yield updateOrAdd(libraryId, _, path);
+                yield _updateOrAdd(libraryId, _, path);
             }
             catch (_) {
                 console.error(_.message);
@@ -231,6 +256,7 @@ function fromCodioProject(libraryId, path) {
 }
 function find(libraryId, tags = new Map()) {
     return __awaiter(this, void 0, void 0, function* () {
+        libraryId = yield getLibraryId(libraryId);
         if (!config_1.default) {
             throw new Error('No Config');
         }
