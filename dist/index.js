@@ -83,30 +83,38 @@ function listLibraries() {
         }
     });
 }
-function updateJSON(assessment, base, isNew) {
+function updateTags(tags, id, hash) {
+    const idTag = lodash_1.default.find(tags, { name: assessmentsTypes_1.API_ID_TAG });
+    if (lodash_1.default.isUndefined(idTag)) {
+        tags.push({
+            name: assessmentsTypes_1.API_ID_TAG,
+            value: id
+        });
+    }
+    else {
+        idTag.value = id;
+    }
+    const hashTag = lodash_1.default.find(tags, { name: assessmentsTypes_1.API_HASH_TAG });
+    if (lodash_1.default.isUndefined(hashTag)) {
+        tags.push({
+            name: assessmentsTypes_1.API_HASH_TAG,
+            value: hash
+        });
+    }
+    else {
+        hashTag.value = hash;
+    }
+}
+function updateJSON(assessment, base) {
     return __awaiter(this, void 0, void 0, function* () {
         const filePath = path_1.default.join(base, '.guides', 'assessments.json');
         const jsonString = yield fs_1.default.promises.readFile(filePath, { encoding: 'utf8' });
         const json = JSON.parse(jsonString);
         for (const item of json) {
             if (item.taskId === assessment.taskId) {
-                if (isNew) {
-                    item.source.metadata.tags.push({
-                        name: assessmentsTypes_1.API_ID_TAG,
-                        value: assessment.getId()
-                    });
-                    item.source.metadata.tags.push({
-                        name: assessmentsTypes_1.API_HASH_TAG,
-                        value: assessment.getHash()
-                    });
-                }
-                else {
-                    for (const tag of item.source.metadata.tags) {
-                        if (tag.name == assessmentsTypes_1.API_HASH_TAG) {
-                            tag.value = assessment.getHash();
-                        }
-                    }
-                }
+                const hash = assessment.getHash();
+                const id = assessment.getId();
+                updateTags(item.source.metadata.tags, id, hash);
                 break;
             }
         }
@@ -149,7 +157,7 @@ function _publishAssessment(libraryId, assessment, isNew, base) {
             const headers = Object.assign(postData.getHeaders(), authHeaders);
             headers['Content-Length'] = yield new Promise(resolve => postData.getLength((_, length) => resolve(length)));
             const assessmentId = isNew ? '' : `/${assessment.assessmentId}`;
-            yield updateJSON(assessment, base, isNew);
+            yield updateJSON(assessment, base);
             yield api(`/api/v1/assessment_library/${libraryId}/assessment${assessmentId}`, postData, headers);
         }
         catch (error) {
