@@ -27,7 +27,7 @@ const main = async () => {
     await codio.v1.assessment.fromCodioProject(libraryId, dir)
     console.log('Completed!')
 
-  } catch (error) {
+  } catch (error: any) {
     if (error.json) {
       console.log(await error.json())
     }
