@@ -4072,11 +4072,7 @@ class Config {
 }
 const config = new Config();
 exports.default = config;
-exports.excludePaths = [
-    '.git',
-    '.github',
-    '.gitignore',
-];
+exports.excludePaths = [];
 
 
 /***/ }),
@@ -4099,7 +4095,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.downloadStudentAssignment = exports.exportStudentAssignment = exports.waitDownloadTask = exports.assignmentStudentsProgress = exports.info = void 0;
+exports.exportAssessmentData = exports.exportAssignmentCSV = exports.exportStudentCSV = exports.downloadAssessmentData = exports.downloadAssignmentCSV = exports.downloadStudentCSV = exports.downloadStudentAssignment = exports.exportStudentAssignment = exports.waitDownloadTask = exports.assignmentStudentsProgress = exports.info = void 0;
 const bent_1 = __importDefault(__nccwpck_require__(3113));
 const https_1 = __importDefault(__nccwpck_require__(7211));
 const fs_1 = __importDefault(__nccwpck_require__(5747));
@@ -4173,6 +4169,9 @@ function waitDownloadTask(taskUrl) {
                 yield new Promise(resolve => setTimeout(resolve, 500));
                 return yield waitDownloadTask(taskUrl);
             }
+            if (archive.error) {
+                throw new Error(`Task ${archive.taskId} failed with an error`);
+            }
             return archive.url;
         }
         catch (error) {
@@ -4216,6 +4215,36 @@ exports.exportStudentAssignment = exportStudentAssignment;
 function downloadStudentAssignment(courseId, assignmentId, studentId, filePath) {
     return __awaiter(this, void 0, void 0, function* () {
         const url = yield exportStudentAssignment(courseId, assignmentId, studentId);
+        return download(filePath, url);
+    });
+}
+exports.downloadStudentAssignment = downloadStudentAssignment;
+function downloadStudentCSV(courseId, studentId, filePath) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const url = yield exportStudentCSV(courseId, studentId);
+        return download(filePath, url);
+    });
+}
+exports.downloadStudentCSV = downloadStudentCSV;
+function downloadAssignmentCSV(courseId, assignmentId, filePath) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const url = yield exportAssignmentCSV(courseId, assignmentId);
+        return download(filePath, url);
+    });
+}
+exports.downloadAssignmentCSV = downloadAssignmentCSV;
+function downloadAssessmentData(courseId, assignmentIds, filePath) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const url = yield exportAssessmentData(courseId, assignmentIds);
+        return download(filePath, url);
+    });
+}
+exports.downloadAssessmentData = downloadAssessmentData;
+function download(filePath, url) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (!url) {
+            throw new Error('Url Not Found');
+        }
         const file = fs_1.default.createWriteStream(filePath);
         return new Promise((resolve, reject) => {
             https_1.default.get(url, (response) => {
@@ -4233,14 +4262,222 @@ function downloadStudentAssignment(courseId, assignmentId, studentId, filePath) 
         });
     });
 }
-exports.downloadStudentAssignment = downloadStudentAssignment;
+function exportStudentCSV(courseId, studentId) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (!config_1.default) {
+            throw new Error('No Config');
+        }
+        try {
+            const token = config_1.default.getToken();
+            const domain = config_1.default.getDomain();
+            const authHeaders = {
+                'Authorization': `Bearer ${token}`
+            };
+            return yield getJson(`https://octopus.${domain}/api/v1/courses/${courseId}/students/${studentId}/export/csv`, undefined, authHeaders);
+        }
+        catch (error) {
+            if (error.json) {
+                const message = JSON.stringify(yield error.json());
+                throw new Error(message);
+            }
+            throw error;
+        }
+    });
+}
+exports.exportStudentCSV = exportStudentCSV;
+function exportAssignmentCSV(courseId, assignmentId) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (!config_1.default) {
+            throw new Error('No Config');
+        }
+        try {
+            const token = config_1.default.getToken();
+            const domain = config_1.default.getDomain();
+            const authHeaders = {
+                'Authorization': `Bearer ${token}`
+            };
+            return yield getJson(`https://octopus.${domain}/api/v1/courses/${courseId}/assignments/${assignmentId}/export/csv`, undefined, authHeaders);
+        }
+        catch (error) {
+            if (error.json) {
+                const message = JSON.stringify(yield error.json());
+                throw new Error(message);
+            }
+            throw error;
+        }
+    });
+}
+exports.exportAssignmentCSV = exportAssignmentCSV;
+function exportAssessmentData(courseId, assignmentIds) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (!config_1.default) {
+            throw new Error('No Config');
+        }
+        try {
+            const token = config_1.default.getToken();
+            const domain = config_1.default.getDomain();
+            const authHeaders = {
+                'Authorization': `Bearer ${token}`
+            };
+            const res = yield getJson(`https://octopus.${domain}/api/v1/courses/${courseId}/export/assessments/csv?assignmentIds=${assignmentIds}`, undefined, authHeaders);
+            const taskUrl = res['taskUri'];
+            if (!taskUrl) {
+                throw new Error('task Url not found');
+            }
+            return yield waitDownloadTask(taskUrl);
+        }
+        catch (error) {
+            if (error.json) {
+                const message = JSON.stringify(yield error.json());
+                throw new Error(message);
+            }
+            throw error;
+        }
+    });
+}
+exports.exportAssessmentData = exportAssessmentData;
 const course = {
     assignmentStudentsProgress,
     info,
     exportStudentAssignment,
-    downloadStudentAssignment
+    downloadStudentAssignment,
+    exportStudentCSV,
+    exportAssignmentCSV,
+    exportAssessmentData,
+    downloadStudentCSV,
+    downloadAssignmentCSV,
+    downloadAssessmentData
 };
 exports.default = course;
+
+
+/***/ }),
+
+/***/ 7550:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.waitTask = exports.publish = exports.info = void 0;
+const bent_1 = __importDefault(__nccwpck_require__(3113));
+const form_data_1 = __importDefault(__nccwpck_require__(4334));
+const fs_1 = __importDefault(__nccwpck_require__(5747));
+const config_1 = __importDefault(__nccwpck_require__(2602));
+const getJson = bent_1.default('json');
+function info(stackId) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (!config_1.default) {
+            throw new Error('No Config');
+        }
+        try {
+            const token = config_1.default.getToken();
+            const domain = config_1.default.getDomain();
+            const authHeaders = {
+                'Authorization': `Bearer ${token}`
+            };
+            return getJson(`https://octopus.${domain}/api/v1/stacks/${stackId}`, undefined, authHeaders);
+        }
+        catch (error) {
+            if (error.json) {
+                const message = JSON.stringify(yield error.json());
+                throw new Error(message);
+            }
+            throw error;
+        }
+    });
+}
+exports.info = info;
+function publish(stackId, id, provisioner, content, archivePath, message) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (!config_1.default) {
+            throw new Error('No Config');
+        }
+        try {
+            const token = config_1.default.getToken();
+            const domain = config_1.default.getDomain();
+            const authHeaders = {
+                'Authorization': `Bearer ${token}`
+            };
+            const api = bent_1.default(`https://octopus.${domain}`, 'POST', 'json', 200);
+            const postData = new form_data_1.default();
+            postData.append('provisioner', provisioner);
+            if (archivePath !== null) {
+                postData.append('files', fs_1.default.createReadStream(archivePath), {
+                    knownLength: fs_1.default.statSync(archivePath).size
+                });
+            }
+            if (id !== null) {
+                postData.append('id', id);
+            }
+            if (content !== null) {
+                postData.append('content', content);
+            }
+            postData.append('message', message);
+            const headers = Object.assign(postData.getHeaders(), authHeaders);
+            headers['Content-Length'] = yield postData.getLengthSync();
+            console.log('headers', headers);
+            console.log('data', postData);
+            const res = yield api(`/api/v1/stacks/${stackId}/versions`, postData, headers);
+            console.log('publish result', res);
+            return res;
+        }
+        catch (error) {
+            if (error.json) {
+                const message = JSON.stringify(yield error.json());
+                throw new Error(message);
+            }
+            throw error;
+        }
+    });
+}
+exports.publish = publish;
+function waitTask(taskUrl) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (!config_1.default) {
+            throw new Error('No Config');
+        }
+        try {
+            const token = config_1.default.getToken();
+            const authHeaders = {
+                'Authorization': `Bearer ${token}`
+            };
+            const res = yield getJson(taskUrl, undefined, authHeaders);
+            console.log('waitTask', res);
+            if (res.status !== 'done' && res.status !== 'error') {
+                yield new Promise(resolve => setTimeout(resolve, 500));
+                return yield waitTask(taskUrl);
+            }
+            return res;
+        }
+        catch (error) {
+            if (error.json) {
+                const message = JSON.stringify(yield error.json());
+                throw new Error(message);
+            }
+            throw error;
+        }
+    });
+}
+exports.waitTask = waitTask;
+const stack = {
+    info,
+    publish,
+    waitTask
+};
+exports.default = stack;
 
 
 /***/ }),
@@ -4452,6 +4689,7 @@ const tools_1 = __importDefault(__nccwpck_require__(6729));
 const assignment_1 = __importDefault(__nccwpck_require__(9469));
 const assessment_1 = __importDefault(__nccwpck_require__(8601));
 const course_1 = __importDefault(__nccwpck_require__(8554));
+const stack_1 = __importDefault(__nccwpck_require__(7550));
 exports.v1 = {
     setDomain: (_) => config_1.default.setDomain(_),
     setAuthToken: (_) => config_1.default.setToken(_),
@@ -4463,7 +4701,8 @@ exports.v1 = {
     tools: tools_1.default,
     assignment: assignment_1.default,
     assessment: assessment_1.default,
-    course: course_1.default
+    course: course_1.default,
+    stack: stack_1.default
 };
 
 
