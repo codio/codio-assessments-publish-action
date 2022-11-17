@@ -3079,6 +3079,29 @@ exports.default = {
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -3099,7 +3122,7 @@ const path_1 = __importDefault(__nccwpck_require__(5622));
 const config_1 = __importDefault(__nccwpck_require__(2602));
 const assessmentsTypes_1 = __nccwpck_require__(9602);
 const form_data_1 = __importDefault(__nccwpck_require__(4334));
-const tools_1 = __importDefault(__nccwpck_require__(6729));
+const tools_1 = __importStar(__nccwpck_require__(6729));
 const lodash_1 = __importDefault(__nccwpck_require__(250));
 const glob_promise_1 = __importDefault(__nccwpck_require__(8252));
 const getJson = (0, bent_1.default)('json');
@@ -3315,6 +3338,7 @@ function getMetadataPages(dir, guidesStructure) {
 }
 function fromCodioProject(libraryId, path) {
     return __awaiter(this, void 0, void 0, function* () {
+        yield (0, tools_1.fixGuidesVersion)(path);
         libraryId = yield getLibraryId(libraryId);
         const assessments = yield loadProjectAssessments(path);
         for (const _ of assessments) {
@@ -4219,6 +4243,7 @@ function updateStudentTimeExtension(courseId, assignmentId, studentId, extension
 exports.updateStudentTimeExtension = updateStudentTimeExtension;
 const assignment = {
     publish: (courseId, assignmentId, projectPath, changelogOrOptions) => __awaiter(void 0, void 0, void 0, function* () {
+        yield (0, tools_1.fixGuidesVersion)(projectPath);
         const { file, dir } = yield archiveTar(projectPath);
         yield assignment.publishArchive(courseId, assignmentId, file, changelogOrOptions);
         fs_1.default.rmdirSync(dir, { recursive: true });
@@ -4808,7 +4833,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.sendApiRequest = exports.getBearer = exports.getApiV1Url = exports.convertToGuidesV3 = exports.secondsToDate = exports.createTar = exports.mapToObject = exports.readMetadataFile = exports.getGuidesStructure = exports.reduce = void 0;
+exports.sendApiRequest = exports.getBearer = exports.getApiV1Url = exports.convertToGuidesV3 = exports.secondsToDate = exports.createTar = exports.mapToObject = exports.readMetadataFile = exports.getGuidesStructure = exports.reduce = exports.fixGuidesVersion = void 0;
 const path_1 = __importDefault(__nccwpck_require__(5622));
 const fs_1 = __importDefault(__nccwpck_require__(5747));
 const lodash_1 = __importDefault(__nccwpck_require__(250));
@@ -4825,11 +4850,17 @@ const GUIDES_CONTENT_DIR = '.guides/content';
 const OLD_METADATA_FILE = '.guides/metadata.json';
 const INDEX_METADATA_FILE = 'index.json';
 const PAGE = 'page';
-function reduce(srcDir, dstDir, yaml_sections, paths) {
+function fixGuidesVersion(projectPath) {
     return __awaiter(this, void 0, void 0, function* () {
-        if (fs_1.default.existsSync(path_1.default.join(srcDir, OLD_METADATA_FILE))) {
+        if (fs_1.default.existsSync(path_1.default.join(projectPath, OLD_METADATA_FILE))) {
             yield convertToGuidesV3();
         }
+    });
+}
+exports.fixGuidesVersion = fixGuidesVersion;
+function reduce(srcDir, dstDir, yaml_sections, paths) {
+    return __awaiter(this, void 0, void 0, function* () {
+        yield fixGuidesVersion(srcDir);
         const contentDir = path_1.default.join(srcDir, GUIDES_CONTENT_DIR);
         const rootMetadataPath = path_1.default.join(contentDir, INDEX_METADATA_FILE);
         const rootMetadata = readMetadataFile(rootMetadataPath);
