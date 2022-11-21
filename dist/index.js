@@ -4853,7 +4853,7 @@ const PAGE = 'page';
 function fixGuidesVersion(projectPath) {
     return __awaiter(this, void 0, void 0, function* () {
         if (fs_1.default.existsSync(path_1.default.join(projectPath, OLD_METADATA_FILE))) {
-            yield convertToGuidesV3();
+            yield convertToGuidesV3(projectPath);
         }
     });
 }
@@ -5086,14 +5086,14 @@ function secondsToDate(seconds) {
     return t;
 }
 exports.secondsToDate = secondsToDate;
-function convertToGuidesV3() {
+function convertToGuidesV3(cwd) {
     return __awaiter(this, void 0, void 0, function* () {
         console.log('guides conversion process...');
         try {
-            yield execShellCommand(`curl "https://static-assets.codio.com/guides-converter-v3/guides-converter-v3-${CONVERTER_VERSION}" --output guides-converter-v3`);
-            yield execShellCommand('chmod +x ./guides-converter-v3');
-            yield execShellCommand('./guides-converter-v3');
-            yield execShellCommand('rm guides-converter-v3');
+            yield execShellCommand(`curl "https://static-assets.codio.com/guides-converter-v3/guides-converter-v3-${CONVERTER_VERSION}" --output guides-converter-v3`, cwd);
+            yield execShellCommand('chmod +x ./guides-converter-v3', cwd);
+            yield execShellCommand('./guides-converter-v3', cwd);
+            yield execShellCommand('rm guides-converter-v3', cwd);
         }
         catch (error) {
             throw new Error(error);
@@ -5101,9 +5101,9 @@ function convertToGuidesV3() {
     });
 }
 exports.convertToGuidesV3 = convertToGuidesV3;
-function execShellCommand(command) {
+function execShellCommand(command, cwd) {
     return new Promise((resolve, reject) => {
-        child_process_1.default.exec(command, (error, stdout, stderr) => {
+        child_process_1.default.exec(command, { cwd }, (error, stdout, stderr) => {
             if (error) {
                 reject(error);
             }
