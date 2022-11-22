@@ -3127,6 +3127,7 @@ const lodash_1 = __importDefault(__nccwpck_require__(250));
 const glob_promise_1 = __importDefault(__nccwpck_require__(8252));
 const getJson = (0, bent_1.default)('json');
 const ASSESSMENTS_DIR = '.guides/assessments';
+const ROOT_METADATA = '.guides/content/index.json';
 function listLibraries() {
     return __awaiter(this, void 0, void 0, function* () {
         if (!config_1.default) {
@@ -3299,12 +3300,12 @@ function loadProjectAssessments(dir) {
         const assessmentJsonFiles = yield (0, glob_promise_1.default)('*.json', { cwd: path_1.default.join(dir, ASSESSMENTS_DIR), nodir: true });
         let assessments = [];
         for (const file of assessmentJsonFiles) {
-            const filePath = path_1.default.join(ASSESSMENTS_DIR, file);
+            const filePath = path_1.default.join(dir, ASSESSMENTS_DIR, file);
             const assessmentString = yield fs_1.default.promises.readFile(filePath, { encoding: 'utf8' });
             const assessment = JSON.parse(assessmentString);
             assessments = assessments.concat(assessment);
         }
-        const rootMetadata = tools_1.default.readMetadataFile('.guides/content/index.json');
+        const rootMetadata = tools_1.default.readMetadataFile(path_1.default.join(dir, ROOT_METADATA));
         const guidesStructure = tools_1.default.getGuidesStructure(rootMetadata, dir, '');
         const metadataPages = getMetadataPages(dir, guidesStructure);
         for (const json of assessments) {
